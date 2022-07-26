@@ -1,4 +1,4 @@
-<img src="dist/public/logo.png" width="100%">
+<img src="./public/logo.png" width="100%">
 
 # Simple Static Starter
 
