@@ -1,0 +1,23 @@
+body {
+  margin: 0;
+  padding: 0;
+
+  div {
+    box-sizing: border-box;
+  }
+
+  .container {
+    width: 100%;
+    text-align: center;
+    margin-top: 50px;
+
+    img {
+      margin: 0 auto;
+      width: 600px;
+    }
+  }
+
+  .dependencies {
+    margin-top: 50px;
+  }
+}
