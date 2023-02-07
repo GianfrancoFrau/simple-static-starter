@@ -2,28 +2,40 @@ const Path = require('path');
 const Webpack = require('webpack');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const TerserPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-
-const debug = process.env.DEBUG;
-const mode = process.env.BUILD_TARGET || 'development';
-const prod = mode === 'production';
-const dev = mode === 'development';
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 
 const config = {
-  mode: mode,
+  mode: 'production',
+  stats: 'errors-only',
+  bail: true,
   entry: {
     app: Path.resolve(__dirname, 'src/ts/index.ts'),
   },
   output: {
     path: Path.join(__dirname, 'dist'),
-    filename: 'js/[name].js',
+    filename: 'js/[name].[chunkhash:8].js',
+    chunkFilename: 'js/[name].[chunkhash:8].chunk.js',
     clean: true,
   },
   optimization: {
+    minimize: true,
+    minimizer: [new CssMinimizerPlugin()],
     splitChunks: {
-      chunks: 'all',
-      name: false,
+      cacheGroups: {
+        commons: {
+          test: /[\\/]node_modules[\\/]/,
+          name(module, chunks, cacheGroupKey) {
+            const moduleFileName = module
+              .identifier()
+              .split('/')
+              .reduceRight(item => item);
+            const allChunksNames = chunks.map(item => item.name).join('~');
+            return `${cacheGroupKey}-${allChunksNames}-${moduleFileName}`;
+          },
+          chunks: 'all',
+        },
+      },
     },
   },
   plugins: [
@@ -33,9 +45,8 @@ const config = {
     new HtmlWebpackPlugin({
       template: Path.resolve(__dirname, 'src/index.html'),
     }),
-    new Webpack.DefinePlugin({
-      'process.env.NODE_ENV': JSON.stringify(mode),
-    }),
+    new Webpack.optimize.ModuleConcatenationPlugin(),
+    new MiniCssExtractPlugin(),
   ],
   resolve: {
     alias: {
@@ -78,44 +89,12 @@ const config = {
           },
         },
       },
+      {
+        test: /\.s?css/i,
+        use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],
+      },
     ],
   },
 };
-
-if (dev) {
-  config.devtool = 'source-map';
-  config.devServer = {
-    port: 4200,
-  };
-  config.module.rules.push({
-    test: /\.s?css$/i,
-    use: ['style-loader', 'css-loader', 'sass-loader'],
-  });
-} else if (prod) {
-  config.stats = 'errors-only';
-  config.bail = true;
-  config.module.rules.push({
-    test: /\.s?css/i,
-    use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],
-  });
-  config.output.filename = 'js/[name].[chunkhash:8].js';
-  config.output.chunkFilename = 'js/[name].[chunkhash:8].chunk.js';
-  config.optimization.minimize = true;
-  config.optimization.minimizer = [
-    new TerserPlugin({
-      parallel: true,
-    }),
-  ];
-  config.plugins.push(new Webpack.optimize.ModuleConcatenationPlugin());
-  config.plugins.push(
-    new MiniCssExtractPlugin({
-      filename: 'styles/bundle.[hash].css',
-    }),
-  );
-}
-
-if (debug) {
-  console.log('Running in debug mode.\n\n', JSON.stringify(config, null, 2));
-}
 
 module.exports = config;
