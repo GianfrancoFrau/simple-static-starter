@@ -3,6 +3,7 @@
 # Simple Static Starter
 
 A simple starter toolchain for frontend projects. Based on Webpack, Typescript and Sass.
+Just clone this repo and start your new awesome project.
 
 ### Installation
 
